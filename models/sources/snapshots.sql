@@ -4,7 +4,7 @@ with dummy_cte as (select 1 as foo)
 select
     cast(null as {{ type_string() }}) as command_invocation_id,
     cast(null as {{ type_string() }}) as node_id,
-    cast(null as {{ type_timestamp() }}) as run_started_at,
+    cast(null as {{ type_string() }}) as run_started_at,
     cast(null as {{ type_string() }}) as {% if target.type == "sqlserver" %} "database"
     {% else %} database
     {% endif %},

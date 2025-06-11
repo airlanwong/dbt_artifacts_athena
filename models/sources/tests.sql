@@ -9,7 +9,7 @@ with
 select
     cast(null as {{ type_string() }}) as command_invocation_id
     , cast(null as {{ type_string() }}) as node_id
-    , cast(null as {{ type_timestamp() }}) as run_started_at
+    , cast(null as {{ type_string() }}) as run_started_at
     , cast(null as {{ type_string() }}) as name
     , cast(null as {{ type_array() }}) as depends_on_nodes
     , cast(null as {{ type_string() }}) as package_name
