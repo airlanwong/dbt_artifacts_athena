@@ -125,18 +125,18 @@
             {% for exposure in exposures -%}
                 (
                     '{{ invocation_id }}', {# command_invocation_id #}
-                    '{{ exposure.unique_id }}', {# node_id #}
+                    '{{ exposure.unique_id | replace("'","\\'") }}', {# node_id #}
                     {% if config.get("table_type") == "iceberg" %}
-                        cast('{{ run_started_at }}' as varchar), {# run_started_at #}
+                        cast('{{ run_started_at }}' as timestamp(6)), {# run_started_at #}
                     {% else %}
                         '{{ run_started_at }}', {# run_started_at #}
                     {% endif %}
-                    '{{ exposure.name }}', {# name #}
+                    '{{ exposure.name | replace("'","\\'") }}', {# name #}
                     '{{ exposure.type }}', {# type #}
-                    '{{ adapter.dispatch("parse_json", "dbt_artifacts")(tojson(exposure.owner) }}', {# owner #}
+                    '''{{ adapter.dispatch('parse_json', 'dbt_artifacts')(tojson(exposure.owner) | replace("'","\\'")) }}''', {# owner #}
                     '{{ exposure.maturity }}', {# maturity #}
                     '{{ exposure.original_file_path }}', {# path #}
-                    '{{ exposure.description }}', {# description #}
+                    '''{{ exposure.description | replace("'","\\'") }}''', {# description #}
                     '{{ exposure.url }}', {# url #}
                     '{{ exposure.package_name }}', {# package_name #}
                     '{{ tojson(exposure.depends_on.nodes) }}', {# depends_on_nodes #}
@@ -144,7 +144,7 @@
                     {% if var('dbt_artifacts_exclude_all_results', false) %}
                         null
                     {% else %}
-                        '{{ adapter.dispatch("parse_json", "dbt_artifacts")(tojson(exposure)}}' {# all_results #}
+                        '''{{ adapter.dispatch('parse_json', 'dbt_artifacts')(tojson(exposure) | replace("\\", "\\\\") | replace("'", "\\'") | replace('"', '\\"')) }}''' {# all_results #}
                     {% endif %}
                 )
                 {%- if not loop.last %},{%- endif %}
