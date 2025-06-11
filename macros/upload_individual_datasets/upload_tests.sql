@@ -1,5 +1,5 @@
 {% macro upload_tests(tests) -%}
-    {{ return(adapter.dispatch("get_tests_dml_sql", "dbt_artifacts")(tests)) }}
+    {{ return(adapter.dispatch('get_tests_dml_sql', 'dbt_artifacts')(tests)) }}
 {%- endmacro %}
 
 {% macro default__get_tests_dml_sql(tests) -%}
@@ -37,7 +37,8 @@
         {%- endfor %}
         {% endset %}
         {{ test_values }}
-    {% else %} {{ return("") }}
+    {% else %}
+        {{ return("") }}
     {% endif %}
 {% endmacro -%}
 
@@ -64,7 +65,8 @@
             {%- endfor %}
         {% endset %}
         {{ test_values }}
-    {% else %} {{ return("") }}
+    {% else %}
+        {{ return("") }}
     {% endif %}
 {%- endmacro %}
 
@@ -91,62 +93,32 @@
             {%- endfor %}
         {% endset %}
         {{ test_values }}
-    {% else %} {{ return("") }}
+    {% else %}
+        {{ return("") }}
     {% endif %}
 {%- endmacro %}
 
-
-{% macro sqlserver__get_tests_dml_sql(tests) -%}
-
-    {% if tests != [] %}
-        {% set test_values %}
-        select
-            "1", "2", "3", "4", "5", "6", "7", "8", "9"
-        from ( values
-        {% for test in tests -%}
-            (
-                '{{ invocation_id }}', {# command_invocation_id #}
-                '{{ test.unique_id }}', {# node_id #}
-                '{{ run_started_at }}', {# run_started_at #}
-                '{{ test.name }}', {# name #}
-                '{{ tojson(test.depends_on.nodes) }}', {# depends_on_nodes #}
-                '{{ test.package_name }}', {# package_name #}
-                '{{ test.original_file_path }}', {# test_path #}
-                '{{ tojson(test.tags) }}', {# tags #}
-                {% if var('dbt_artifacts_exclude_all_results', false) %}
-                    null
-                {% else %}
-                    '{{ tojson(test) | replace("'","''") }}' {# all_fields #}
-                {% endif %}
-            )
-            {%- if not loop.last %},{%- endif %}
-        {%- endfor %}
-        ) v ("1", "2", "3", "4", "5", "6", "7", "8", "9")
-        {% endset %}
-        {{ test_values }}
-    {% else %} {{ return("") }}
-    {% endif %}
-{% endmacro -%}
-
-
-
-{% macro trino__get_tests_dml_sql(tests) -%}
+{% macro athena__get_tests_dml_sql(tests) -%}
     {% if tests != [] %}
         {% set test_values %}
             {% for test in tests -%}
                 (
                     '{{ invocation_id }}', {# command_invocation_id #}
                     '{{ test.unique_id }}', {# node_id #}
-                    TIMESTAMP '{{ run_started_at }}', {# run_started_at #}
+                    {% if config.get("table_type") == "iceberg" %}
+                        cast('{{ run_started_at }}' as timestamp(6)), {# run_started_at #}
+                    {% else %}
+                        '{{ run_started_at }}', {# run_started_at #}
+                    {% endif %}
                     '{{ test.name }}', {# name #}
-                    ARRAY {{ test.depends_on.nodes }}, {# depends_on_nodes #}
+                    '{{ tojson(test.depends_on.nodes) }}', {# depends_on_nodes #}
                     '{{ test.package_name }}', {# package_name #}
-                    '{{ test.original_file_path }}', {# test_path #}
-                    ARRAY {{ test.tags }}, {# tags #}
+                    '{{ test.original_file_path | replace('\\', '\\\\') }}', {# test_path #}
+                    '{{ tojson(test.tags) }}', {# tags #}
                     {% if var('dbt_artifacts_exclude_all_results', false) %}
                         null
                     {% else %}
-                        '{{ tojson(test) | replace("'", "''") }}' {# all_results #}
+                        '{{ (tojson(test) | replace("\\", "\\\\") | replace("'", '"') | replace('"', '\\"')) }}' {# all_fields #}
                     {% endif %}
                 )
                 {%- if not loop.last %},{%- endif %}

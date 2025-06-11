@@ -1,5 +1,5 @@
 {% macro upload_seed_executions(seeds) -%}
-    {{ return(adapter.dispatch("get_seed_executions_dml_sql", "dbt_artifacts")(seeds)) }}
+    {{ return(adapter.dispatch('get_seed_executions_dml_sql', 'dbt_artifacts')(seeds)) }}
 {%- endmacro %}
 
 {% macro default__get_seed_executions_dml_sql(seeds) -%}
@@ -56,7 +56,8 @@
         {%- endfor %}
         {% endset %}
         {{ seed_execution_values }}
-    {% else %} {{ return("") }}
+    {% else %}
+        {{ return("") }}
     {% endif %}
 {% endmacro -%}
 
@@ -96,7 +97,8 @@
         {%- endfor %}
         {% endset %}
         {{ seed_execution_values }}
-    {% else %} {{ return("") }}
+    {% else %}
+        {{ return("") }}
     {% endif %}
 {% endmacro -%}
 
@@ -154,7 +156,8 @@
         {%- endfor %}
         {% endset %}
         {{ seed_execution_values }}
-    {% else %} {{ return("") }}
+    {% else %}
+        {{ return("") }}
     {% endif %}
 {% endmacro -%}
 
@@ -210,65 +213,23 @@
         {%- endfor %}
         {% endset %}
         {{ seed_execution_values }}
-    {% else %} {{ return("") }}
+    {% else %}
+        {{ return("") }}
     {% endif %}
 {% endmacro -%}
 
-{% macro sqlserver__get_seed_executions_dml_sql(seeds) -%}
+{% macro athena__get_seed_executions_dml_sql(seeds) -%}
     {% if seeds != [] %}
         {% set seed_execution_values %}
-        select
-            "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16"
-        from ( values
         {% for model in seeds -%}
             (
                 '{{ invocation_id }}', {# command_invocation_id #}
                 '{{ model.node.unique_id }}', {# node_id #}
-                '{{ run_started_at }}', {# run_started_at #}
-
-                {% set config_full_refresh = model.node.config.full_refresh %}
-                {% if config_full_refresh is none %}
-                    {% set config_full_refresh = flags.FULL_REFRESH %}
+                {% if config.get("table_type") == "iceberg" %}
+                    cast('{{ run_started_at }}' as timestamp(6)), {# run_started_at #}
+                {% else %}
+                    '{{ run_started_at }}', {# run_started_at #}
                 {% endif %}
-                '{{ config_full_refresh }}', {# was_full_refresh #}
-
-                '{{ model.thread_id }}', {# thread_id #}
-                '{{ model.status }}', {# status #}
-
-                {% set compile_started_at = (model.timing | selectattr("name", "eq", "compile") | first | default({}))["started_at"] %}
-                {% if compile_started_at %}'{{ compile_started_at }}'{% else %}null{% endif %}, {# compile_started_at #}
-                {% set query_completed_at = (model.timing | selectattr("name", "eq", "execute") | first | default({}))["completed_at"] %}
-                {% if query_completed_at %}'{{ query_completed_at }}'{% else %}null{% endif %}, {# query_completed_at #}
-
-                {{ model.execution_time }}, {# total_node_runtime #}
-                null, -- rows_affected not available {# Only available in Snowflake #}
-                '{{ model.node.config.materialized }}', {# materialization #}
-                '{{ model.node.schema }}', {# schema #}
-                '{{ model.node.name }}', {# name #}
-                '{{ model.node.alias }}', {# alias #}
-                '{{ model.message | replace("'", "''") }}', {# message #}
-                '{{ tojson(model.adapter_response) | replace("'", "''") }}' {# adapter_response #}
-            )
-            {%- if not loop.last %},{%- endif %}
-        {%- endfor %}
-
-        ) v ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16")
-
-        {% endset %}
-        {{ seed_execution_values }}
-    {% else %} {{ return("") }}
-    {% endif %}
-{% endmacro -%}
-
-
-{% macro trino__get_seed_executions_dml_sql(seeds) -%}
-    {% if seeds != [] %}
-        {% set seed_execution_values %}
-        {% for model in seeds -%}
-            (
-                '{{ invocation_id }}', {# command_invocation_id #}
-                '{{ model.node.unique_id }}', {# node_id #}
-                TIMESTAMP '{{ run_started_at }}', {# run_started_at #}
 
                 {% set config_full_refresh = model.node.config.full_refresh %}
                 {% if config_full_refresh is none %}
@@ -280,25 +241,35 @@
                 '{{ model.status }}', {# status #}
 
                 {% set compile_started_at = (model.timing | selectattr("name", "eq", "compile") | first | default({}))["started_at"] %}
-                {% if compile_started_at %}TIMESTAMP '{{ compile_started_at }}'{% else %}null{% endif %}, {# compile_started_at #}
-                {% set query_completed_at = (model.timing | selectattr("name", "eq", "execute") | first | default({}))["completed_at"] %}
-                {% if query_completed_at %}TIMESTAMP '{{ query_completed_at }}'{% else %}null{% endif %}, {# query_completed_at #}
-                
-                {{ model.execution_time }}, {# total_node_runtime #}
-                
-                {% if model.adapter_response.rows_affected is none or model.adapter_response.rows_affected is not defined %}
-                    null
+                {% if compile_started_at %}
+                    {% if config.get("table_type") == "iceberg" %}
+                        cast('{{ compile_started_at }}' as timestamp(6)), {# compile_started_at #}
+                    {% else %}
+                        '{{ compile_started_at }}', {# compile_started_at #}
+                    {% endif %}
                 {% else %}
-                    {{ model.adapter_response.rows_affected }}
+                    null
                 {% endif %}
-                , {# rows_affected #}
+                
+                {% set query_completed_at = (model.timing | selectattr("name", "eq", "execute") | first | default({}))["completed_at"] %}
+                {% if query_completed_at %}
+                    {% if config.get("table_type") == "iceberg" %}
+                        cast('{{ query_completed_at }}' as timestamp(6)), {# query_completed_at #}
+                    {% else %}
+                        '{{ query_completed_at }}', {# query_completed_at #}
+                    {% endif %}
+                {% else %}
+                    null
+                {% endif %}
 
+                {{ model.execution_time }}, {# total_node_runtime #}
+                null, -- rows_affected not available {# Databricks #}
                 '{{ model.node.config.materialized }}', {# materialization #}
                 '{{ model.node.schema }}', {# schema #}
                 '{{ model.node.name }}', {# name #}
                 '{{ model.node.alias }}', {# alias #}
-                '{{ model.message | replace("'", "''") }}', {# message #}
-                '{{ tojson(model.adapter_response) | replace("'", "''") }}' {# adapter_response #}
+                '{{ model.message | replace("\\", "\\\\") | replace("'", "") | replace('"', "") | replace("\n", "\\n") }}', {# message #}
+                {{ adapter.dispatch('parse_json', 'dbt_artifacts')(tojson(model.adapter_response) | replace("\\", "\\\\") | replace("'", "\\'") | replace('"', '\\"')) }} {# adapter_response #}
             )
             {%- if not loop.last %},{%- endif %}
         {%- endfor %}
