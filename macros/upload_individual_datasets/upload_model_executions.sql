@@ -248,7 +248,7 @@
                     null
                 {% endif %},
                 {{ model.execution_time }}, {# total_node_runtime #}
-                null, {# rows_affected #}
+                {{model.adapter_response.rows_affected}}, {# rows_affected #}
                 '{{ model.node.config.materialized }}', {# materialization #}
                 '{{ model.node.schema }}', {# schema #}
                 '{{ model.node.name }}', {# name #}

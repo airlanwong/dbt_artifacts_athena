@@ -263,13 +263,13 @@
                 {% endif %}
 
                 {{ model.execution_time }}, {# total_node_runtime #}
-                null, -- rows_affected not available {# Databricks #}
+                {{model.adapter_response.rows_affected}}, -- rows_affected not available {# Databricks #}
                 '{{ model.node.config.materialized }}', {# materialization #}
                 '{{ model.node.schema }}', {# schema #}
                 '{{ model.node.name }}', {# name #}
                 '{{ model.node.alias }}', {# alias #}
                 '{{ model.message | replace("\\", "\\\\") | replace("'", "") | replace('"', "") | replace("\n", "\\n") }}', {# message #}
-                {{ adapter.dispatch('parse_json', 'dbt_artifacts')(tojson(model.adapter_response) | replace("\\", "\\\\") | replace("'", "\\'") | replace('"', '\\"')) }} {# adapter_response #}
+                '{{ adapter.dispatch('parse_json', 'dbt_artifacts')(tojson(model.adapter_response) | replace("\\", "\\\\") | replace("'", "\\'") | replace('"', '\\"')) }}' {# adapter_response #}
             )
             {%- if not loop.last %},{%- endif %}
         {%- endfor %}

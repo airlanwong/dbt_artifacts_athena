@@ -118,7 +118,7 @@
                     '{{ invocation_id }}', {# command_invocation_id #}
                     '{{ seed.unique_id }}', {# node_id #}
                     {% if config.get("table_type") == "iceberg" %}
-                        cast('{{ run_started_at }}' as timestamp(6)), {# run_started_at #}
+                        '{{ run_started_at }}', {# run_started_at #}
                     {% else %}
                         '{{ run_started_at }}', {# run_started_at #}
                     {% endif %}
@@ -128,12 +128,12 @@
                     '{{ seed.package_name }}', {# package_name #}
                     '{{ seed.original_file_path | replace('\\', '\\\\') }}', {# path #}
                     '{{ seed.checksum.checksum | replace('\\', '\\\\')}}', {# checksum #}
-                    {{ adapter.dispatch('parse_json', 'dbt_artifacts')(tojson(seed.config.meta)) }}, {# meta #}
+                    null, {# meta #}
                     '{{ seed.alias }}', {# alias #}
                     {% if var('dbt_artifacts_exclude_all_results', false) %}
                         null
                     {% else %}
-                        {{ adapter.dispatch('parse_json', 'dbt_artifacts')(tojson(seed) | replace("\\", "\\\\") | replace("'","\\'") | replace('"', '\\"')) }} {# all_results #}
+                        null {# all_results #}
                     {% endif %}
                 )
                 {%- if not loop.last %},{%- endif %}

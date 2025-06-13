@@ -135,17 +135,17 @@
                     '{{ snapshot.database }}', {# database #}
                     '{{ snapshot.schema }}', {# schema #}
                     '{{ snapshot.name }}', {# name #}
-                    {{ tojson(snapshot.depends_on.nodes) }}, {# depends_on_nodes #}
+                    '{{ tojson(snapshot.depends_on.nodes) }}', {# depends_on_nodes #}
                     '{{ snapshot.package_name }}', {# package_name #}
                     '{{ snapshot.original_file_path | replace('\\', '\\\\') }}', {# path #}
                     '{{ snapshot.checksum.checksum | replace('\\', '\\\\') }}', {# checksum #}
                     '{{ snapshot.config.strategy }}', {# strategy #}
-                    {{ adapter.dispatch('parse_json', 'dbt_artifacts')(tojson(snapshot.config.meta)) }}, {# meta #}
+                    null, {# meta #}
                     '{{ snapshot.alias }}', {# alias #}
                     {% if var('dbt_artifacts_exclude_all_results', false) %}
                         null
                     {% else %}
-                        {{ adapter.dispatch('parse_json', 'dbt_artifacts')(tojson(snapshot) | replace("\\", "\\\\") | replace("'","\\'") | replace('"', '\\"')) }} {# all_results #}
+                        null {# all_results #}
                     {% endif %}
                 )
                 {%- if not loop.last %},{%- endif %}
