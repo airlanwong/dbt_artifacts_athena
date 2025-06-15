@@ -229,7 +229,7 @@
         '{{ dbt_version }}', {# dbt_version #}
         '{{ project_name }}', {# project_name #}
         {% if config.get("table_type") == "iceberg" %}
-            cast('{{ run_started_at }}' as timestamp(6)), {# run_started_at #}
+            '{{ run_started_at }}', {# run_started_at #}
         {% else %}
             '{{ run_started_at }}', {# run_started_at #}
         {% endif %}
@@ -275,7 +275,7 @@
             {% endif %}
         {% endif %}
 
-        '{{ adapter.dispatch('parse_json', 'dbt_artifacts')(tojson(invocation_args_dict) | replace("'", "\\'")) }}', {# invocation_args #}
+        '{{ adapter.dispatch('parse_json', 'dbt_artifacts')(tojson(invocation_args_dict) | replace("'", "\\'") | replace("'", "")) }}', {# invocation_args #}
 
         {% set metadata_env = {} %}
         {% for key, value in dbt_metadata_envs.items() %}
